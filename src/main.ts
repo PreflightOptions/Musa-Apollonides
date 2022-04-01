@@ -29,7 +29,6 @@ export default class Musa extends Plugin {
 		let stringFile = await this.app.vault.read(file);
 		let newTitle = file.basename.split("-").last().trim();
 		let trueOldFileName = oldPath.split("/").last().split("-").last().replace(".md", "").trim();
-		log(trueOldFileName);
 		let pattern = "# " + trueOldFileName;
 		let re = new RegExp(pattern);
 		let newFile = stringFile.replace(re, "# " + newTitle);
@@ -73,7 +72,7 @@ export default class Musa extends Plugin {
 		let trueFileName = file.path.split("/").last().split("-").last().replace(".md", "").trim();
 
 		// Compare title to file name
-		let fileTitle = stringFile.match('#{1} {1}.*').join("").slice(2);
+		let fileTitle = stringFile.match('#{1} {1}.*').join("").slice(2).trim();
 		if(trueFileName != fileTitle){
 			let trueFilePath = file.path;
 			let newFilePath = trueFilePath.replace(trueFileName, fileTitle);
