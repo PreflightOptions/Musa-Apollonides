@@ -24,16 +24,16 @@ export default class Musa extends Plugin {
 			log("Action in progress, skipping"); 
 			return;
 		};
-		log("File name changed, renaming title");
 		this.startMusaActions();
+		log("File name changed, renaming title");
 		let stringFile = await this.app.vault.read(file);
 		let newTitle = file.basename.split("-").last().trim();
 		let trueOldFileName = oldPath.split("/").last().split("-").last().replace(".md", "").trim();
 		let pattern = "# " + trueOldFileName;
 		let re = new RegExp(pattern);
 		let newFile = stringFile.replace(re, "# " + newTitle);
-		//this.modifyDate(file, stringFile);
-		await file.vault.modify(file, newFile);
+		await this.updateDate(newFile, file);
+		//await file.vault.modify(file, newFile);
 		this.stopMusaActions();
 	}
 
@@ -55,6 +55,17 @@ export default class Musa extends Plugin {
 		let date = year + "-" + month + "-" + days + " " + hours + ":" + minutes + ":" + seconds;
 
 		return date;
+	}
+
+	async updateDate(stringFile: string, file: TFile){
+		// Modify data in frontmatter
+		log("Update modified date");
+		let date = this.getDate();
+		
+		let modifiedS = "modified date: " + date;
+		let re = new RegExp('(modified date.*)');
+		let newFile = stringFile.replace(re, modifiedS);
+		await file.vault.modify(file, newFile);
 	}
 
 	async fileModifiedEvent(file: TFile) {
@@ -79,17 +90,9 @@ export default class Musa extends Plugin {
 			log("Title changed, renaming file");
 			await this.app.fileManager.renameFile(file, newFilePath);
 		}
-
-		
-		// Modify data in frontmatter
-		log("Update modified date");
-		let date = this.getDate();
-		
-		let modifiedS = "modified date: " + date;
-		let re = new RegExp('(modified date.*)');
-		let newFile = stringFile.replace(re, modifiedS);
-		await file.vault.modify(file, newFile);
-
+		await this.updateDate(stringFile, file)
 		this.stopMusaActions();
 	}
+
+
 }
