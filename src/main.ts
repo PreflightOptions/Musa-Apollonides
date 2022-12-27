@@ -1,11 +1,31 @@
 import { App, debounce,Editor, editorEditorField, EventRef, MarkdownView, MetadataCache, Modal, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TFolder, Vault } from 'obsidian';
 import { log } from "utilities/logger";
+import { tab } from "settings/tab";
 import { debounceTime, Subscription, Subject } from 'rxjs';
+import { validateIgnored } from 'utilities/utilities';
 
 interface fileInterface {
 	file: TFile,
 	oldPath: string
 }
+
+export interface IgnoredFolder {
+	// Folder string should be a path mappable back to a TFolder
+	folder: string
+}
+export interface MusaSettings {
+	dateRegex: string;
+	dateString: string;
+	foldersToIgnore: IgnoredFolder[]
+	enable_ignored_folders: boolean
+}
+
+export const DEFAULT_SETTINGS: Partial<MusaSettings> = {
+	dateRegex: "modified date\: \d{4}-\d{2}-\d{2} \d{1,2}:\d{1,2}:{0,1}\d{1,2}",
+	dateString: "modified date",
+	foldersToIgnore: [{folder: ""}],
+	enable_ignored_folders: false
+};
 
 export default class Musa extends Plugin {
 	subject = new Subject<TFile>();
@@ -13,37 +33,74 @@ export default class Musa extends Plugin {
 	primaryFileArray: TFile[] = [];
 	dedupedFileArray: TFile[] = [];
 	subArray: Subscription[] = [];
+	settings: MusaSettings;
 
 	async onload() {
-		log("Musa Apollonides Loaded");
+		await this.loadSettings();
+		this.addSettingTab(new tab(this.app, this));
 		this.subArray.push(this.buildModifySub());
 		this.subArray.push(this.buildRenameSub());
 
 		this.registerEvent(this.app.vault.on("modify", this.nextModify));
 		this.registerEvent(this.app.vault.on("rename", this.nextRename));
+		log("Musa Apollonides Loaded");
+
+		//log(this.settings.dateRegex);
 	}
 
 	onunload(): void {
 		log("Unloading Musa Apollonides");
 		this.app.vault.off("modify", this.nextModify);
 		this.app.vault.off("rename", this.nextRename);
-
+		
 		for(let i = this.subArray.length - 1; i >= 0; i--) {
 			this.subArray.pop().unsubscribe();
 		}
 		this.unload();
 	}
 
-	nextRename = async (file: TFile, oldPath: string) => {
+	async loadSettings() {
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	  }
+	
+	async saveSettings() {
+		await this.saveData(this.settings);
+	}
+
+	nextRename = async (file: TAbstractFile, oldPath: string) => {
 		log("file rename event");
-		let fileData:fileInterface = {"file": file, "oldPath": oldPath};
-		this.renameSubject.next(fileData);
+
+		if(file instanceof TFolder) {
+			log("event was folder, ignoring");
+			return;
+		}
+		
+		if (file instanceof TFile) {
+			if(validateIgnored(file, this)) {
+				log("validated ignored true");
+				return;
+			}
+			let fileData:fileInterface = {"file": file, "oldPath": oldPath};
+			this.renameSubject.next(fileData);
+		}
 	}
 	
-	nextModify = async (file: TFile) => {
+	nextModify = async (file: TAbstractFile) => {
 		log("file modify event");
-		this.primaryFileArray.push(file);
-		this.subject.next(file);
+
+		if(file instanceof TFolder) {
+			log("event was folder, ignoring");
+			return;
+		}
+
+		if (file instanceof TFile) {
+			if(validateIgnored(file, this)) {
+				log("validated ignored true");
+				return;
+			}
+			this.primaryFileArray.push(file);
+			this.subject.next(file);
+		}
 	}
 
 	buildModifySub() {
@@ -81,6 +138,7 @@ export default class Musa extends Plugin {
 
 	async fileModifiedEvent(file: TFile) {
 		// Skip file modifications for template folder
+		// We need to check file.parent == item in forbidden array of TFolders
 		if(file.path.contains("04 - ")) { 
 			log("File is template, skipping file"); 
 			return;
@@ -102,15 +160,25 @@ export default class Musa extends Plugin {
 	}
 
 	updateFile = async (stringFile: string, file: TFile) => {
+		log("updating file");
 		// Modify data in frontmatter
 		let date = this.getDate();
 		
-		let modifiedS = "modified date: " + date;
-		let re = new RegExp('(modified date.*)');
-		let newFile = stringFile.replace(re, modifiedS);
-		this.toggleModifyListener()
+		let modifiedS = this.settings.dateString + ": " + date;
+		let regex = this.settings.dateRegex;
 
-		file.vault.modify(file, newFile);
+		let re = new RegExp(this.settings.dateRegex, "g");
+		
+		if(re.test(stringFile)) {
+			//log("new date " + modifiedS);
+			let newFile = stringFile.replace(re, modifiedS);
+			this.toggleModifyListener()
+	
+			file.vault.modify(file, newFile);
+		}
+		else {
+			log("ERROR - No regex match");
+		}
 	}
 
 	async toggleModifyListener() {

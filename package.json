@@ -1,5 +1,5 @@
 {
-	"name": "Musa-Apollonides",
+	"name": "musa-apollonides",
 	"version": "0.0.1",
 	"description": "Watches and maintains vault integrity",
 	"main": "main.js",
@@ -28,6 +28,7 @@
 		"typescript": "4.4.4"
 	},
 	"dependencies": {
+		"@popperjs/core": "^2.11.6",
 		"rxjs": "^7.5.7"
 	}
 }
