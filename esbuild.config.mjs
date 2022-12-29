@@ -50,7 +50,7 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outdir: 'build',
+	outfile: 'main.js',
 }
 ).then(result => {
 	movefiles.movefiles(prod);
