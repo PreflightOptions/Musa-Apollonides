@@ -52,6 +52,7 @@ jobs:
         sudo apt-get install jq
     - name: Find Version Number
       run: echo "{MUSAVERSION}={`cat manifest.json |jq -r .version`}" >> $GITHUB_ENV
+    - name: Check Var
       run: echo "${{ env.MUSAVERSION }}"
     - name: Create Release
       uses: ncipollo/release-action@v1
