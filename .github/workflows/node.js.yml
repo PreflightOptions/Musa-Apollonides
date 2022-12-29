@@ -53,10 +53,12 @@ jobs:
     - name: Find Version Number
       run: echo "{MUSAVERSION}={`cat manifest.json |jq -r .version`}" >> $GITHUB_ENV
     - name: Check Var
-      run: echo "${{ env.MUSAVERSION }}"
+      run: echo ${{ env.MUSAVERSION }}
     - name: Create Release
       uses: ncipollo/release-action@v1
+      env: 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with: 
         tag_name: ${{ env.MUSAVERSION }}
         artifacts: musa-apollonides.zip
-      
+        token: ${{ env.GITHUB_TOKEN }}
