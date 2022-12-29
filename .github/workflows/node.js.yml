@@ -51,11 +51,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install jq
     - name: Find Version Number
-      run: export MUSAVERSION=`cat manifest.json |jq -r .version`
+      run: echo "{MUSAVERSION}={`cat manifest.json |jq -r .version`}" >> $GITHUB_ENV
     - name: Create Release
       uses: ncipollo/release-action@v1
       with: 
         tag_name: v${{ env.MUSAVERSION }}
-        release_name: v${{ env.MUSAVERSION }}
         artifacts: musa-apollonides.zip
       
