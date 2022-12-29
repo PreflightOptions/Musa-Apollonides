@@ -1,4 +1,4 @@
-import { App, debounce,Editor, editorEditorField, EventRef, MarkdownView, MetadataCache, Modal, Notice, Plugin, PluginSettingTab, Setting, TAbstractFile, TFile, TFolder, Vault } from 'obsidian';
+import { Plugin, TAbstractFile, TFile, TFolder } from 'obsidian';
 import { log } from "utilities/logger";
 import { tab } from "settings/tab";
 import { debounceTime, Subscription, Subject } from 'rxjs';
@@ -18,13 +18,15 @@ export interface MusaSettings {
 	dateString: string;
 	foldersToIgnore: IgnoredFolder[]
 	enable_ignored_folders: boolean
+	enable_title_rewrite: boolean
 }
 
 export const DEFAULT_SETTINGS: Partial<MusaSettings> = {
 	dateRegex: "modified date\: \d{4}-\d{2}-\d{2} \d{1,2}:\d{1,2}:{0,1}\d{1,2}",
 	dateString: "modified date",
 	foldersToIgnore: [{folder: ""}],
-	enable_ignored_folders: false
+	enable_ignored_folders: false,
+	enable_title_rewrite: true
 };
 
 export default class Musa extends Plugin {
@@ -38,20 +40,25 @@ export default class Musa extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new tab(this.app, this));
+
 		this.subArray.push(this.buildModifySub());
-		this.subArray.push(this.buildRenameSub());
-
 		this.registerEvent(this.app.vault.on("modify", this.nextModify));
-		this.registerEvent(this.app.vault.on("rename", this.nextRename));
-		log("Musa Apollonides Loaded");
 
-		//log(this.settings.dateRegex);
+		if(this.settings.enable_title_rewrite) {
+			this.registerEvent(this.app.vault.on("rename", this.nextRename));
+			this.subArray.push(this.buildRenameSub());
+		}
+		
+		log("Musa Apollonides Loaded");
 	}
 
 	onunload(): void {
 		log("Unloading Musa Apollonides");
 		this.app.vault.off("modify", this.nextModify);
-		this.app.vault.off("rename", this.nextRename);
+
+		if(this.settings.enable_title_rewrite) {
+			this.app.vault.off("rename", this.nextRename);
+		}
 		
 		for(let i = this.subArray.length - 1; i >= 0; i--) {
 			this.subArray.pop().unsubscribe();
@@ -77,7 +84,7 @@ export default class Musa extends Plugin {
 		
 		if (file instanceof TFile) {
 			if(validateIgnored(file, this)) {
-				log("validated ignored true");
+				log("validated file ignored: true");
 				return;
 			}
 			let fileData:fileInterface = {"file": file, "oldPath": oldPath};
@@ -137,23 +144,19 @@ export default class Musa extends Plugin {
 	}
 
 	async fileModifiedEvent(file: TFile) {
-		// Skip file modifications for template folder
-		// We need to check file.parent == item in forbidden array of TFolders
-		if(file.path.contains("04 - ")) { 
-			log("File is template, skipping file"); 
-			return;
-		};	
-		let trueFileName = file.path.split("/").last().split("-").last().replace(".md", "").trim();
+		let stringFile = await this.app.vault.read(file);
 
 		// Compare title to file name
 		//if title does not match file name, change file name
-		let stringFile = await this.app.vault.read(file);
-		let fileTitle = stringFile.match('#{1} {1}.*').join("").slice(2).trim();
-		if(trueFileName != fileTitle){
-			let trueFilePath = file.path;
-			let newFilePath = trueFilePath.replace(trueFileName, fileTitle);
-			this.toggleRenameListener();
-			await this.app.fileManager.renameFile(file, newFilePath);
+		if(this.settings.enable_title_rewrite) {
+			let trueFileName = file.path.split("/").last().split("-").last().replace(".md", "").trim();
+			let fileTitle = stringFile.match('#{1} {1}.*').join("").slice(2).trim();
+			if(trueFileName != fileTitle){
+				let trueFilePath = file.path;
+				let newFilePath = trueFilePath.replace(trueFileName, fileTitle);
+				this.toggleRenameListener();
+				await this.app.fileManager.renameFile(file, newFilePath);
+			}
 		}
 
 		this.updateFile(stringFile, file)

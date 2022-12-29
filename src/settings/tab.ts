@@ -28,7 +28,7 @@ export class tab extends PluginSettingTab {
     
         this.add_regex_settings();
         this.add_ignored_folders();
-
+        this.add_title_setting();
         //log("ignored " + this.plugin.settings.enable_ignored_folders);
     }
 
@@ -47,6 +47,22 @@ export class tab extends PluginSettingTab {
     async saveAndDisplay(): Promise<void> {
         await this.plugin.saveSettings();
         this.display();
+    }
+
+    add_title_setting(): void {
+        new Setting(this.containerEl)
+            .setName("Enable Title Rewrite")
+            .setDesc("If using H1 # to indicate titles, automatically keep the page title and the H1 equal")
+            .addToggle((toggle) => {
+                toggle
+                    .setValue(this.plugin.settings.enable_title_rewrite)
+                    .onChange((title_rewrite) => {
+                        this.plugin.settings.enable_title_rewrite =
+                        title_rewrite;
+                        this.saveAndDisplay();
+                    });
+            })
+
     }
 
     add_regex_settings(): void {

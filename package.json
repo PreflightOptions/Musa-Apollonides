@@ -1,6 +1,6 @@
 {
 	"name": "musa-apollonides",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Watches and maintains vault integrity",
 	"main": "main.js",
 	"files": [
@@ -9,7 +9,7 @@
 		"./manifest.json"
 	],
 	"scripts": {
-		"dev": "node esbuild.config.mjs -- --watch",
+		"dev": "node esbuild.config.dev.mjs -- --watch",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
