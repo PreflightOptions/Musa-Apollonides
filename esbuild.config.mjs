@@ -44,20 +44,16 @@ esbuild.build({
 		'@codemirror/view',
 		...builtins],
 	format: 'cjs',
-	watch: {
-		onRebuild(error, result) {
-			if (error) console.error('watch build failed:', error)
-      		else {
-				console.log('watch build succeeded:', result)
-				movefiles.movefiles();
-			} 
-		}
-	},
+	watch: !prod,
 	target: 'es2016',
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
 	outfile: 'main.js',
 }
-).catch(() => process.exit(1));
-movefiles.movefiles();
+).then(result => {
+	if(!prod) {
+		movefiles.movefiles();
+	}
+})
+.catch(() => process.exit(1));
