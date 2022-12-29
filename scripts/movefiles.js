@@ -5,8 +5,8 @@ const OBSIDIAN_DIR = "~/Documents/obsidianmd/Apollo/.obsidian/plugins/Musa-Apoll
 const srcFilePaths = pkg.files;
 
 
-function movefiles() {
-    shell.echo("Moving files to Obsidian");
+function movefiles(prod) {
+    shell.echo("Moving files");
     if(!shell.test("-d", DEST_DIR)) {
         shell.mkdir("-p", DEST_DIR);
     }
@@ -20,8 +20,12 @@ function movefiles() {
             shell.echo("Error: Cannot find files listed in package.json: %s", srcPath);
             process.exit(1);
         }
+        shell.echo("Moving file: " + srcPath);
         shell.cp(srcPath, DEST_DIR);
-        shell.cp(srcPath, OBSIDIAN_DIR);
+        if(!prod) {
+            shell.echo("Dev Build, moving to obsidian");
+            shell.cp(srcPath, OBSIDIAN_DIR);
+        }
     });
     shell.echo("File move complete");
 }

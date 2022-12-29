@@ -18,6 +18,7 @@ esbuild.build({
 	},
 	entryPoints: ['main.ts'],
 	bundle: true,
+	assetNames: "manifest.json",
 	external: [
 		'obsidian',
 		'electron',
@@ -49,11 +50,9 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: 'main.js',
+	outdir: 'build',
 }
 ).then(result => {
-	if(!prod) {
-		movefiles.movefiles();
-	}
+	movefiles.movefiles(prod);
 })
 .catch(() => process.exit(1));
