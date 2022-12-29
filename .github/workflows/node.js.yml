@@ -55,7 +55,7 @@ jobs:
     - name: Create Release
       uses: ncipollo/release-action@v1
       with: 
-        tag_name: v$MUSAVERSION
-        release_name: v$MUSAVERSION
+        tag_name: v${{ env.MUSAVERSION }}
+        release_name: v${{ env.MUSAVERSION }}
         artifacts: musa-apollonides.zip
       
