@@ -42,6 +42,20 @@ jobs:
       uses: actions/download-artifact@v3
       with: 
         name: musa-build
-    - name: Test Download
-      run: ls -R
+    - name: Archive
+      uses: thedoctor0/zip-release@main
+      with: 
+        filename: musa-apollonides.zip
+    - name: Install jq tool
+      run: |
+        sudo apt-get update
+        sudo apt-get install jq
+    - name: Find Version Number
+      run: export MUSAVERSION=`cat manifest.json |jq -r .version`
+    - name: Create Release
+      uses: ncipollo/release-action@v1
+      with: 
+        tag_name: v$MUSAVERSION
+        release_name: v$MUSAVERSION
+        artifacts: musa-apollonides.zip
       
