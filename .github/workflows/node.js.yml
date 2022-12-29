@@ -33,3 +33,15 @@ jobs:
       with: 
         name: musa-build
         path: build/
+  release:
+    name: Release Plugin
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v3
+      with: 
+        name: musa-build
+    - name: Test Download
+      run: ls -R
+      
